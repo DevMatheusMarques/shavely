@@ -183,9 +183,3 @@ Em todas as rotas protegidas, envie o cabeçalho **`Authorization: Bearer <JWT>`
 | `npm run start:dev` | Modo desenvolvimento com reload (`tsx`) |
 | `npm run migration:run` | Executa migrações TypeORM (requer `.env`) |
 | `npm run migration:revert` | Reverte última migração |
-
----
-
-## Licença
-
-Projeto privado — ajuste conforme a licença da sua organização.
