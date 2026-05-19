@@ -1,0 +1,149 @@
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: shavely
+      MYSQL_USER: shavely
+      MYSQL_PASSWORD: shavely
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 50s
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file: .env.docker
+    depends_on:
+      mysql:
+        condition: service_healthy
+    command: ["npm", "run", "migration:run:dist"]
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file: .env.docker
+    ports:
+      - "3000:3000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    command: ["node", "dist/main.js"]
+
+  outbox-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file: .env.docker
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    command: ["node", "dist/workers/outbox-dispatcher.worker.js"]
+
+  worker-notifications:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file: .env.docker
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    command: ["node", "dist/workers/notifications.worker.js"]
+
+  worker-analytics:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file: .env.docker
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    command: ["node", "dist/workers/analytics.worker.js"]
+
+  worker-reminders:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file: .env.docker
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    command: ["node", "dist/workers/reminder-scheduler.worker.js"]
+
+  novu:
+    image: novuhq/novu/api:0.24.0
+    profiles:
+      - novu
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      MONGO_URL: mongodb://mongodb:27017/novu-db
+      JWT_SECRET: change-me-novu-jwt
+      STORE_ENCRYPTION_KEY: "32char_store_encryption_key_12"
+    ports:
+      - "3001:3001"
+
+  mongodb:
+    image: mongo:7
+    profiles:
+      - novu
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_novu:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  mysql_data:
+  mongo_novu:

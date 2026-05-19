@@ -1,0 +1,48 @@
+{
+  "name": "shavely-api",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/main.js",
+    "start:dev": "tsx watch src/main.ts",
+    "typeorm": "node -r dotenv/config ./node_modules/typeorm/cli.js",
+    "migration:run": "tsx -r dotenv/config ./node_modules/typeorm/cli.js migration:run -d ./src/infrastructure/database/data-source.ts",
+    "migration:revert": "tsx -r dotenv/config ./node_modules/typeorm/cli.js migration:revert -d ./src/infrastructure/database/data-source.ts",
+    "migration:run:dist": "node -r dotenv/config ./node_modules/typeorm/cli.js migration:run -d ./dist/infrastructure/database/data-source.js",
+    "migration:revert:dist": "node -r dotenv/config ./node_modules/typeorm/cli.js migration:revert -d ./dist/infrastructure/database/data-source.js",
+    "worker:notifications": "node dist/workers/notifications.worker.js",
+    "worker:analytics": "node dist/workers/analytics.worker.js",
+    "worker:outbox": "node dist/workers/outbox-dispatcher.worker.js",
+    "worker:reminders": "node dist/workers/reminder-scheduler.worker.js"
+  },
+  "dependencies": {
+    "@fastify/cors": "^10.0.2",
+    "@fastify/jwt": "^9.0.3",
+    "@fastify/rate-limit": "^10.2.2",
+    "@fastify/swagger": "^9.4.2",
+    "@fastify/swagger-ui": "^5.2.1",
+    "amqplib": "^0.10.5",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.7",
+    "fastify": "^5.2.1",
+    "jsonwebtoken": "^9.0.2",
+    "firebase-admin": "^13.0.2",
+    "mysql2": "^3.12.0",
+    "reflect-metadata": "^0.2.2",
+    "typeorm": "^0.3.20",
+    "uuid": "^11.0.5",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/amqplib": "^0.10.6",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/node": "^22.10.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
