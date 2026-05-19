@@ -6,6 +6,14 @@ import {
   updateBarberLinkedUserSchema,
   updateUserByAdminSchema,
 } from "../../../application/dto/admin.dto.js";
+import { createServiceSchema, updateServiceSchema } from "../../../application/dto/service.dto.js";
+import type {
+  CreateServiceAdminUseCase,
+  ListServicesByBarberAdminUseCase,
+  RestoreServiceAdminUseCase,
+  SoftDeleteServiceAdminUseCase,
+  UpdateServiceAdminUseCase,
+} from "../../../application/use-cases/admin/admin-services-crud.use-case.js";
 import type { CreateBarberByAdminUseCase } from "../../../application/use-cases/admin/create-barber-by-admin.use-case.js";
 import type { CreateClientByAdminUseCase } from "../../../application/use-cases/admin/create-client-by-admin.use-case.js";
 import type { GetBarberAdminUseCase } from "../../../application/use-cases/admin/get-barber-admin.use-case.js";
@@ -22,9 +30,12 @@ import {
   createBarberAdminBodySchema,
   createBarberAdminResponseSchema,
   createClientAdminBodySchema,
+  createServiceBodySchema,
+  createServiceResponseSchema,
   errorSchema,
   includeDeletedQuerySchema,
   updateBarberAdminBodySchema,
+  updateServiceBodySchema,
   updateUserAdminBodySchema,
   validationErrorSchema,
 } from "../openapi/schemas.js";
@@ -44,6 +55,11 @@ export function registerAdminRoutes(
     updateBarberAdmin: UpdateBarberAdminUseCase;
     softDeleteBarberAdmin: SoftDeleteBarberAdminUseCase;
     restoreBarberAdmin: RestoreBarberAdminUseCase;
+    listServicesByBarberAdmin: ListServicesByBarberAdminUseCase;
+    createServiceAdmin: CreateServiceAdminUseCase;
+    updateServiceAdmin: UpdateServiceAdminUseCase;
+    softDeleteServiceAdmin: SoftDeleteServiceAdminUseCase;
+    restoreServiceAdmin: RestoreServiceAdminUseCase;
   },
   authenticate: preHandlerHookHandler,
   requireAdmin: preHandlerHookHandler,
@@ -366,6 +382,149 @@ export function registerAdminRoutes(
     async (request, reply) => {
       const { id } = request.params as { id: string };
       await deps.softDeleteBarberAdmin.execute(id);
+      void reply.status(204).send();
+    },
+  );
+
+  const barberServicesParams = {
+    type: "object" as const,
+    required: ["barberId"],
+    properties: { barberId: { type: "string", format: "uuid" } },
+  };
+  const barberServicesItemParams = {
+    type: "object" as const,
+    required: ["barberId", "serviceId"],
+    properties: {
+      barberId: { type: "string", format: "uuid" },
+      serviceId: { type: "string", format: "uuid" },
+    },
+  };
+
+  app.get(
+    "/admin/barbers/:barberId/services",
+    {
+      preHandler: adminPre,
+      schema: {
+        tags: ["admin"],
+        summary: "Listar serviços do barbeiro (admin)",
+        security: [{ bearerAuth: [] }],
+        params: barberServicesParams,
+        querystring: includeDeletedQuerySchema,
+        response: {
+          200: { type: "array", items: { type: "object", additionalProperties: true } },
+          401: { ...errorSchema },
+          403: { ...errorSchema },
+          404: { ...errorSchema },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { barberId } = request.params as { barberId: string };
+      const query = adminListQuerySchema.parse(request.query);
+      const rows = await deps.listServicesByBarberAdmin.execute(barberId, query.includeDeleted === true);
+      void reply.send(rows);
+    },
+  );
+
+  app.post(
+    "/admin/barbers/:barberId/services",
+    {
+      preHandler: adminPre,
+      schema: {
+        tags: ["admin"],
+        summary: "Criar serviço para o barbeiro (admin)",
+        security: [{ bearerAuth: [] }],
+        params: barberServicesParams,
+        body: createServiceBodySchema,
+        response: {
+          201: { description: "Serviço criado", ...createServiceResponseSchema },
+          400: { ...validationErrorSchema },
+          401: { ...errorSchema },
+          403: { ...errorSchema },
+          404: { ...errorSchema },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { barberId } = request.params as { barberId: string };
+      const body = createServiceSchema.parse(request.body);
+      const result = await deps.createServiceAdmin.execute(barberId, body);
+      void reply.status(201).send(result);
+    },
+  );
+
+  app.patch(
+    "/admin/barbers/:barberId/services/:serviceId",
+    {
+      preHandler: adminPre,
+      schema: {
+        tags: ["admin"],
+        summary: "Atualizar serviço do barbeiro (admin)",
+        security: [{ bearerAuth: [] }],
+        params: barberServicesItemParams,
+        body: updateServiceBodySchema,
+        response: {
+          204: { description: "Atualizado" },
+          400: { ...validationErrorSchema },
+          401: { ...errorSchema },
+          403: { ...errorSchema },
+          404: { ...errorSchema },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { barberId, serviceId } = request.params as { barberId: string; serviceId: string };
+      const body = updateServiceSchema.parse(request.body);
+      await deps.updateServiceAdmin.execute(barberId, serviceId, body);
+      void reply.status(204).send();
+    },
+  );
+
+  app.delete(
+    "/admin/barbers/:barberId/services/:serviceId",
+    {
+      preHandler: adminPre,
+      schema: {
+        tags: ["admin"],
+        summary: "Apagar serviço do barbeiro (soft delete)",
+        security: [{ bearerAuth: [] }],
+        params: barberServicesItemParams,
+        response: {
+          204: { description: "Apagado" },
+          401: { ...errorSchema },
+          403: { ...errorSchema },
+          404: { ...errorSchema },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { barberId, serviceId } = request.params as { barberId: string; serviceId: string };
+      await deps.softDeleteServiceAdmin.execute(barberId, serviceId);
+      void reply.status(204).send();
+    },
+  );
+
+  app.post(
+    "/admin/barbers/:barberId/services/:serviceId/restore",
+    {
+      preHandler: adminPre,
+      schema: {
+        tags: ["admin"],
+        summary: "Restaurar serviço do barbeiro",
+        security: [{ bearerAuth: [] }],
+        params: barberServicesItemParams,
+        response: {
+          204: { description: "Restaurado" },
+          400: { ...errorSchema },
+          401: { ...errorSchema },
+          403: { ...errorSchema },
+          404: { ...errorSchema },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { barberId, serviceId } = request.params as { barberId: string; serviceId: string };
+      await deps.restoreServiceAdmin.execute(barberId, serviceId);
       void reply.status(204).send();
     },
   );

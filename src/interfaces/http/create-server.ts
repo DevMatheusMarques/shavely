@@ -33,6 +33,13 @@ import { CreateBarberByAdminUseCase } from "../../application/use-cases/admin/cr
 import { CreateClientByAdminUseCase } from "../../application/use-cases/admin/create-client-by-admin.use-case.js";
 import { GetBarberAdminUseCase } from "../../application/use-cases/admin/get-barber-admin.use-case.js";
 import { GetUserAdminUseCase } from "../../application/use-cases/admin/get-user-admin.use-case.js";
+import {
+  CreateServiceAdminUseCase,
+  ListServicesByBarberAdminUseCase,
+  RestoreServiceAdminUseCase,
+  SoftDeleteServiceAdminUseCase,
+  UpdateServiceAdminUseCase,
+} from "../../application/use-cases/admin/admin-services-crud.use-case.js";
 import { ListBarbersAdminUseCase } from "../../application/use-cases/admin/list-barbers-admin.use-case.js";
 import { ListUsersAdminUseCase } from "../../application/use-cases/admin/list-users-admin.use-case.js";
 import { RestoreBarberAdminUseCase } from "../../application/use-cases/admin/restore-barber-admin.use-case.js";
@@ -154,6 +161,11 @@ export async function createServer(): Promise<FastifyInstance> {
   const softDeleteUserAdmin = new SoftDeleteUserAdminUseCase(users, barbers);
   const restoreUserAdmin = new RestoreUserAdminUseCase(users, barbers);
   const listBarbersAdmin = new ListBarbersAdminUseCase(barbers, users);
+  const listServicesByBarberAdmin = new ListServicesByBarberAdminUseCase(barbers, services);
+  const createServiceAdmin = new CreateServiceAdminUseCase(barbers, services, clock);
+  const updateServiceAdmin = new UpdateServiceAdminUseCase(barbers, services, clock);
+  const softDeleteServiceAdmin = new SoftDeleteServiceAdminUseCase(barbers, services);
+  const restoreServiceAdmin = new RestoreServiceAdminUseCase(barbers, services);
   const getBarberAdmin = new GetBarberAdminUseCase(barbers, users);
   const updateBarberAdmin = new UpdateBarberAdminUseCase(barbers, users, clock);
   const softDeleteBarberAdmin = new SoftDeleteBarberAdminUseCase(barbers, users);
@@ -229,6 +241,11 @@ export async function createServer(): Promise<FastifyInstance> {
       softDeleteUserAdmin,
       restoreUserAdmin,
       listBarbersAdmin,
+      listServicesByBarberAdmin,
+      createServiceAdmin,
+      updateServiceAdmin,
+      softDeleteServiceAdmin,
+      restoreServiceAdmin,
       getBarberAdmin,
       updateBarberAdmin,
       softDeleteBarberAdmin,
