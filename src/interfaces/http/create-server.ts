@@ -61,6 +61,7 @@ import {
   UpdateAvailabilitySlotUseCase,
 } from "../../application/use-cases/barbers/barber-availability-crud.use-case.js";
 import { RegisterDeviceTokenUseCase } from "../../application/use-cases/notifications/register-device-token.use-case.js";
+import { ListBookableBarbersUseCase } from "../../application/use-cases/barbers/list-bookable-barbers.use-case.js";
 import { ListServicesByBarberUseCase } from "../../application/use-cases/services/list-services-by-barber.use-case.js";
 import {
   GetServiceByBarberUseCase,
@@ -133,6 +134,7 @@ export async function createServer(): Promise<FastifyInstance> {
   const createService = new CreateServiceUseCase(barbers, services, clock);
   const setAvailability = new SetBarberAvailabilityUseCase(barbers);
   const registerDeviceToken = new RegisterDeviceTokenUseCase(notificationTokens);
+  const listBookableBarbers = new ListBookableBarbersUseCase(barbers, users);
   const listServicesByBarber = new ListServicesByBarberUseCase(services);
   const listMyServices = new ListMyServicesUseCase(barbers, services);
   const getServiceByBarber = new GetServiceByBarberUseCase(barbers, services);
@@ -215,7 +217,7 @@ export async function createServer(): Promise<FastifyInstance> {
   );
 
   registerAuthRoutes(app, { registerClient, login });
-  registerPublicRoutes(app, { listServicesByBarber });
+  registerPublicRoutes(app, { listBookableBarbers, listServicesByBarber });
   registerAdminRoutes(
     app,
     {

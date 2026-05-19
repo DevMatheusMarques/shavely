@@ -278,6 +278,14 @@ export const cancelAppointmentResponseSchema = {
   },
 };
 
+export const publicBookableBarberSchema = {
+  type: "object" as const,
+  properties: {
+    barberId: { type: "string", format: "uuid" },
+    name: { type: "string" },
+  },
+};
+
 export const publicServiceRowSchema = {
   type: "object" as const,
   properties: {

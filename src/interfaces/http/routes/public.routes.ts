@@ -1,14 +1,37 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
+import type { ListBookableBarbersUseCase } from "../../../application/use-cases/barbers/list-bookable-barbers.use-case.js";
 import type { ListServicesByBarberUseCase } from "../../../application/use-cases/services/list-services-by-barber.use-case.js";
-import { publicServiceRowSchema, validationErrorSchema } from "../openapi/schemas.js";
+import { publicBookableBarberSchema, publicServiceRowSchema, validationErrorSchema } from "../openapi/schemas.js";
 
 const barberIdParam = z.object({ barberId: z.string().uuid() });
 
 export function registerPublicRoutes(
   app: FastifyInstance,
-  deps: { listServicesByBarber: ListServicesByBarberUseCase },
+  deps: { listBookableBarbers: ListBookableBarbersUseCase; listServicesByBarber: ListServicesByBarberUseCase },
 ): void {
+  app.get(
+    "/barbers",
+    {
+      schema: {
+        tags: ["public"],
+        summary: "Listar barbeiros para marcação",
+        description: "Sem autenticação. Apenas barbeiros activos (nome + id).",
+        response: {
+          200: {
+            description: "Lista de barbeiros",
+            type: "array",
+            items: publicBookableBarberSchema,
+          },
+        },
+      },
+    },
+    async (_request, reply) => {
+      const rows = await deps.listBookableBarbers.execute();
+      void reply.send(rows);
+    },
+  );
+
   app.get(
     "/barbers/:barberId/services",
     {
