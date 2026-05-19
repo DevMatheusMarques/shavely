@@ -13,6 +13,8 @@ import { TypeormBarberRepository } from "../../infrastructure/persistence/typeor
 import { TypeormServiceRepository } from "../../infrastructure/persistence/typeorm/repositories/typeorm-service.repository.js";
 import { TypeormAppointmentRepository } from "../../infrastructure/persistence/typeorm/repositories/typeorm-appointment.repository.js";
 import { TypeormNotificationTokenRepository } from "../../infrastructure/persistence/typeorm/repositories/typeorm-notification-token.repository.js";
+import { TypeormProductRepository } from "../../infrastructure/persistence/typeorm/repositories/typeorm-product.repository.js";
+import { TypeormStockMovementRepository } from "../../infrastructure/persistence/typeorm/repositories/typeorm-stock-movement.repository.js";
 import { TypeormUnitOfWork } from "../../infrastructure/persistence/typeorm/typeorm-unit-of-work.js";
 import { UserOrm } from "../../infrastructure/persistence/typeorm/entities/user.orm.js";
 import { BarberOrm } from "../../infrastructure/persistence/typeorm/entities/barber.orm.js";
@@ -20,6 +22,8 @@ import { BarberAvailabilityOrm } from "../../infrastructure/persistence/typeorm/
 import { ServiceOrm } from "../../infrastructure/persistence/typeorm/entities/service.orm.js";
 import { AppointmentOrm } from "../../infrastructure/persistence/typeorm/entities/appointment.orm.js";
 import { NotificationTokenOrm } from "../../infrastructure/persistence/typeorm/entities/notification-token.orm.js";
+import { ProductOrm } from "../../infrastructure/persistence/typeorm/entities/product.orm.js";
+import { StockMovementOrm } from "../../infrastructure/persistence/typeorm/entities/stock-movement.orm.js";
 import { SystemClock } from "../../infrastructure/time/system-clock.js";
 import { BcryptPasswordHasher } from "../../infrastructure/auth/bcrypt-password-hasher.js";
 import { JwtTokenService } from "../../infrastructure/auth/jwt-token.service.js";
@@ -65,6 +69,14 @@ import {
   SoftDeleteServiceUseCase,
   UpdateServiceUseCase,
 } from "../../application/use-cases/services/barber-service-crud.use-case.js";
+import { CreateProductUseCase } from "../../application/use-cases/inventory/create-product.use-case.js";
+import { GetProductUseCase } from "../../application/use-cases/inventory/get-product.use-case.js";
+import { ListProductsUseCase } from "../../application/use-cases/inventory/list-products.use-case.js";
+import { ListStockMovementsUseCase } from "../../application/use-cases/inventory/list-stock-movements.use-case.js";
+import { RegisterStockMovementUseCase } from "../../application/use-cases/inventory/register-stock-movement.use-case.js";
+import { RestoreProductUseCase } from "../../application/use-cases/inventory/restore-product.use-case.js";
+import { SoftDeleteProductUseCase } from "../../application/use-cases/inventory/soft-delete-product.use-case.js";
+import { UpdateProductUseCase } from "../../application/use-cases/inventory/update-product.use-case.js";
 import { registerErrorHandler } from "./plugins/error-handler.plugin.js";
 import { registerRequestLogging } from "./plugins/logging.plugin.js";
 import { createAuthenticate, createRequireRoles } from "./auth/authenticate.js";
@@ -73,6 +85,7 @@ import { registerAuthRoutes } from "./routes/auth.routes.js";
 import { registerAppointmentRoutes } from "./routes/appointments.routes.js";
 import { registerAdminRoutes } from "./routes/admin.routes.js";
 import { registerBarberRoutes } from "./routes/barber.routes.js";
+import { registerInventoryRoutes } from "./routes/inventory.routes.js";
 import { registerPublicRoutes } from "./routes/public.routes.js";
 
 export async function createServer(): Promise<FastifyInstance> {
@@ -90,6 +103,10 @@ export async function createServer(): Promise<FastifyInstance> {
   const appointments = new TypeormAppointmentRepository(AppDataSource.getRepository(AppointmentOrm));
   const notificationTokens = new TypeormNotificationTokenRepository(
     AppDataSource.getRepository(NotificationTokenOrm),
+  );
+  const products = new TypeormProductRepository(AppDataSource.getRepository(ProductOrm));
+  const stockMovements = new TypeormStockMovementRepository(
+    AppDataSource.getRepository(StockMovementOrm),
   );
   const uow = new TypeormUnitOfWork(AppDataSource);
   const clock = new SystemClock();
@@ -139,6 +156,14 @@ export async function createServer(): Promise<FastifyInstance> {
   const updateBarberAdmin = new UpdateBarberAdminUseCase(barbers, users, clock);
   const softDeleteBarberAdmin = new SoftDeleteBarberAdminUseCase(barbers, users);
   const restoreBarberAdmin = new RestoreBarberAdminUseCase(barbers, users);
+  const createProduct = new CreateProductUseCase(products, clock);
+  const listProducts = new ListProductsUseCase(products);
+  const getProduct = new GetProductUseCase(products);
+  const updateProduct = new UpdateProductUseCase(products, clock);
+  const softDeleteProduct = new SoftDeleteProductUseCase(products);
+  const restoreProduct = new RestoreProductUseCase(products);
+  const registerStockMovement = new RegisterStockMovementUseCase(uow, clock);
+  const listStockMovements = new ListStockMovementsUseCase(stockMovements);
 
   const app = Fastify({ logger: true });
 
@@ -240,6 +265,20 @@ export async function createServer(): Promise<FastifyInstance> {
       updateAppointment,
       softDeleteAppointmentAdmin,
       restoreAppointmentAdmin,
+    },
+    authenticate,
+  );
+  registerInventoryRoutes(
+    app,
+    {
+      createProduct,
+      listProducts,
+      getProduct,
+      updateProduct,
+      softDeleteProduct,
+      restoreProduct,
+      registerStockMovement,
+      listStockMovements,
     },
     authenticate,
   );

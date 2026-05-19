@@ -288,3 +288,103 @@ export const publicServiceRowSchema = {
     priceCents: { type: "integer" },
   },
 };
+
+export const productRowSchema = {
+  type: "object" as const,
+  properties: {
+    id: { type: "string", format: "uuid" },
+    sku: { type: "string" },
+    name: { type: "string" },
+    description: { type: "string", nullable: true },
+    category: { type: "string", nullable: true },
+    unit: { type: "string", description: "Unidade (un, ml, g, etc.)" },
+    quantity: { type: "integer", description: "Quantidade atual" },
+    minQuantity: { type: "integer", description: "Quantidade mínima" },
+    costCents: { type: "integer", description: "Custo unitário em centavos" },
+    isLowStock: { type: "boolean" },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+    deletedAt: { type: "string", format: "date-time", nullable: true },
+  },
+};
+
+export const createProductBodySchema = {
+  type: "object" as const,
+  required: ["sku", "name", "unit"],
+  properties: {
+    sku: { type: "string", minLength: 1, maxLength: 64, pattern: "^[A-Za-z0-9._-]+$" },
+    name: { type: "string", minLength: 2, maxLength: 160 },
+    description: { type: "string", maxLength: 500, nullable: true },
+    category: { type: "string", maxLength: 80, nullable: true },
+    unit: { type: "string", minLength: 1, maxLength: 16 },
+    quantity: { type: "integer", minimum: 0, default: 0 },
+    minQuantity: { type: "integer", minimum: 0, default: 0 },
+    costCents: { type: "integer", minimum: 0, default: 0 },
+  },
+};
+
+export const createProductResponseSchema = {
+  type: "object" as const,
+  properties: { productId: { type: "string", format: "uuid" } },
+};
+
+export const updateProductBodySchema = {
+  type: "object" as const,
+  properties: {
+    sku: { type: "string", minLength: 1, maxLength: 64, pattern: "^[A-Za-z0-9._-]+$" },
+    name: { type: "string", minLength: 2, maxLength: 160 },
+    description: { type: "string", maxLength: 500, nullable: true },
+    category: { type: "string", maxLength: 80, nullable: true },
+    unit: { type: "string", minLength: 1, maxLength: 16 },
+    minQuantity: { type: "integer", minimum: 0 },
+    costCents: { type: "integer", minimum: 0 },
+  },
+};
+
+export const listProductsQueryOpenApiSchema = {
+  type: "object" as const,
+  properties: {
+    search: { type: "string", description: "Procura por nome ou SKU" },
+    category: { type: "string" },
+    lowStock: { type: "string", enum: ["true", "false"], description: "Apenas com estoque baixo" },
+    includeDeleted: { type: "string", enum: ["true", "false"] },
+  },
+};
+
+export const stockMovementBodySchema = {
+  type: "object" as const,
+  required: ["type", "quantity"],
+  properties: {
+    type: { type: "string", enum: ["IN", "OUT", "ADJUSTMENT"] },
+    quantity: {
+      type: "integer",
+      description:
+        "IN/OUT: quantidade positiva. ADJUSTMENT: quantidade alvo (>= 0) que substituirá o estoque atual.",
+    },
+    reason: { type: "string", minLength: 1, maxLength: 255 },
+  },
+};
+
+export const stockMovementRowSchema = {
+  type: "object" as const,
+  properties: {
+    id: { type: "string", format: "uuid" },
+    productId: { type: "string", format: "uuid" },
+    type: { type: "string", enum: ["IN", "OUT", "ADJUSTMENT"] },
+    quantity: { type: "integer", description: "Variação efetiva (positiva ou negativa)" },
+    quantityAfter: { type: "integer", description: "Estoque após o movimento" },
+    reason: { type: "string", nullable: true },
+    performedByUserId: { type: "string", format: "uuid", nullable: true },
+    createdAt: { type: "string", format: "date-time" },
+  },
+};
+
+export const listMovementsQueryOpenApiSchema = {
+  type: "object" as const,
+  properties: {
+    productId: { type: "string", format: "uuid" },
+    type: { type: "string", enum: ["IN", "OUT", "ADJUSTMENT"] },
+    from: { type: "string", format: "date-time" },
+    to: { type: "string", format: "date-time" },
+  },
+};
