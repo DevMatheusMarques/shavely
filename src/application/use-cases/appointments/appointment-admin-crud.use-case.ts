@@ -6,6 +6,7 @@ import type { UpdateAppointmentInput } from "../../dto/appointment.dto.js";
 import type { AppointmentRepositoryPort } from "../../ports/appointment-repository.port.js";
 import type { BarberRepositoryPort } from "../../ports/barber-repository.port.js";
 import type { ClockPort } from "../../ports/clock.port.js";
+import type { BarberServiceRepositoryPort } from "../../ports/barber-service-repository.port.js";
 import type { ServiceRepositoryPort } from "../../ports/service-repository.port.js";
 import type { Requester } from "../../types/requester.js";
 
@@ -14,6 +15,7 @@ export class UpdateAppointmentUseCase {
     private readonly appointments: AppointmentRepositoryPort,
     private readonly barbers: BarberRepositoryPort,
     private readonly services: ServiceRepositoryPort,
+    private readonly barberServices: BarberServiceRepositoryPort,
     private readonly clock: ClockPort,
   ) {}
 
@@ -31,9 +33,13 @@ export class UpdateAppointmentUseCase {
     if (Number.isNaN(startsAt.getTime())) {
       throw new DomainError("Data inválida", "INVALID_DATE");
     }
-    const service = await this.services.findByIdAndBarber(nextServiceId, appointment.barberId);
+    const service = await this.services.findById(nextServiceId);
     if (!service) {
-      throw new DomainError("Serviço não encontrado para este barbeiro", "SERVICE_NOT_FOUND", 404);
+      throw new DomainError("Serviço não encontrado", "SERVICE_NOT_FOUND", 404);
+    }
+    const assigned = await this.barberServices.isAssigned(appointment.barberId, nextServiceId);
+    if (!assigned) {
+      throw new DomainError("Este barbeiro não presta o serviço seleccionado", "SERVICE_NOT_OFFERED", 404);
     }
     const endsAt = new Date(startsAt.getTime() + service.durationMinutes * 60 * 1000);
     const availability = await this.barbers.listAvailability(appointment.barberId);

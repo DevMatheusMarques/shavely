@@ -10,6 +10,7 @@ import AppDataSource from "../../infrastructure/database/data-source.js";
 import { loadEnv } from "../../config/env.js";
 import { TypeormUserRepository } from "../../infrastructure/persistence/typeorm/repositories/typeorm-user.repository.js";
 import { TypeormBarberRepository } from "../../infrastructure/persistence/typeorm/repositories/typeorm-barber.repository.js";
+import { TypeormBarberServiceRepository } from "../../infrastructure/persistence/typeorm/repositories/typeorm-barber-service.repository.js";
 import { TypeormServiceRepository } from "../../infrastructure/persistence/typeorm/repositories/typeorm-service.repository.js";
 import { TypeormAppointmentRepository } from "../../infrastructure/persistence/typeorm/repositories/typeorm-appointment.repository.js";
 import { TypeormNotificationTokenRepository } from "../../infrastructure/persistence/typeorm/repositories/typeorm-notification-token.repository.js";
@@ -19,6 +20,7 @@ import { TypeormUnitOfWork } from "../../infrastructure/persistence/typeorm/type
 import { UserOrm } from "../../infrastructure/persistence/typeorm/entities/user.orm.js";
 import { BarberOrm } from "../../infrastructure/persistence/typeorm/entities/barber.orm.js";
 import { BarberAvailabilityOrm } from "../../infrastructure/persistence/typeorm/entities/barber-availability.orm.js";
+import { BarberServiceOrm } from "../../infrastructure/persistence/typeorm/entities/barber-service.orm.js";
 import { ServiceOrm } from "../../infrastructure/persistence/typeorm/entities/service.orm.js";
 import { AppointmentOrm } from "../../infrastructure/persistence/typeorm/entities/appointment.orm.js";
 import { NotificationTokenOrm } from "../../infrastructure/persistence/typeorm/entities/notification-token.orm.js";
@@ -33,13 +35,6 @@ import { CreateBarberByAdminUseCase } from "../../application/use-cases/admin/cr
 import { CreateClientByAdminUseCase } from "../../application/use-cases/admin/create-client-by-admin.use-case.js";
 import { GetBarberAdminUseCase } from "../../application/use-cases/admin/get-barber-admin.use-case.js";
 import { GetUserAdminUseCase } from "../../application/use-cases/admin/get-user-admin.use-case.js";
-import {
-  CreateServiceAdminUseCase,
-  ListServicesByBarberAdminUseCase,
-  RestoreServiceAdminUseCase,
-  SoftDeleteServiceAdminUseCase,
-  UpdateServiceAdminUseCase,
-} from "../../application/use-cases/admin/admin-services-crud.use-case.js";
 import { ListBarbersAdminUseCase } from "../../application/use-cases/admin/list-barbers-admin.use-case.js";
 import { ListUsersAdminUseCase } from "../../application/use-cases/admin/list-users-admin.use-case.js";
 import { RestoreBarberAdminUseCase } from "../../application/use-cases/admin/restore-barber-admin.use-case.js";
@@ -57,7 +52,6 @@ import {
   SoftDeleteAppointmentAdminUseCase,
   UpdateAppointmentUseCase,
 } from "../../application/use-cases/appointments/appointment-admin-crud.use-case.js";
-import { CreateServiceUseCase } from "../../application/use-cases/services/create-service.use-case.js";
 import { SetBarberAvailabilityUseCase } from "../../application/use-cases/barbers/set-barber-availability.use-case.js";
 import {
   CreateAvailabilitySlotUseCase,
@@ -71,12 +65,21 @@ import { RegisterDeviceTokenUseCase } from "../../application/use-cases/notifica
 import { ListBookableBarbersUseCase } from "../../application/use-cases/barbers/list-bookable-barbers.use-case.js";
 import { ListServicesByBarberUseCase } from "../../application/use-cases/services/list-services-by-barber.use-case.js";
 import {
-  GetServiceByBarberUseCase,
-  ListMyServicesUseCase,
-  RestoreServiceUseCase,
-  SoftDeleteServiceUseCase,
-  UpdateServiceUseCase,
-} from "../../application/use-cases/services/barber-service-crud.use-case.js";
+  AssignBarberToServiceUseCase,
+  ListBarbersForServiceUseCase,
+  ListMyAssignedServicesUseCase,
+  ListServicesForBarberUseCase,
+  RestoreBarberServiceAssignmentUseCase,
+  UnassignBarberFromServiceUseCase,
+} from "../../application/use-cases/services/barber-service-assignment.use-case.js";
+import {
+  CreateServiceCatalogUseCase,
+  GetServiceCatalogUseCase,
+  ListServicesCatalogUseCase,
+  RestoreServiceCatalogUseCase,
+  SoftDeleteServiceCatalogUseCase,
+  UpdateServiceCatalogUseCase,
+} from "../../application/use-cases/services/service-catalog.use-case.js";
 import { CreateProductUseCase } from "../../application/use-cases/inventory/create-product.use-case.js";
 import { GetProductUseCase } from "../../application/use-cases/inventory/get-product.use-case.js";
 import { ListProductsUseCase } from "../../application/use-cases/inventory/list-products.use-case.js";
@@ -95,6 +98,7 @@ import { registerAdminRoutes } from "./routes/admin.routes.js";
 import { registerBarberRoutes } from "./routes/barber.routes.js";
 import { registerInventoryRoutes } from "./routes/inventory.routes.js";
 import { registerPublicRoutes } from "./routes/public.routes.js";
+import { registerServicesAdminRoutes } from "./routes/services-admin.routes.js";
 
 export async function createServer(): Promise<FastifyInstance> {
   const env = loadEnv();
@@ -108,6 +112,10 @@ export async function createServer(): Promise<FastifyInstance> {
     AppDataSource.getRepository(BarberAvailabilityOrm),
   );
   const services = new TypeormServiceRepository(AppDataSource.getRepository(ServiceOrm));
+  const barberServices = new TypeormBarberServiceRepository(
+    AppDataSource.getRepository(BarberServiceOrm),
+    AppDataSource.getRepository(ServiceOrm),
+  );
   const appointments = new TypeormAppointmentRepository(AppDataSource.getRepository(AppointmentOrm));
   const notificationTokens = new TypeormNotificationTokenRepository(
     AppDataSource.getRepository(NotificationTokenOrm),
@@ -128,6 +136,7 @@ export async function createServer(): Promise<FastifyInstance> {
     appointments,
     barbers,
     services,
+    barberServices,
     users,
     uow,
     clock,
@@ -135,19 +144,20 @@ export async function createServer(): Promise<FastifyInstance> {
   const cancelAppointment = new CancelAppointmentUseCase(appointments, barbers, users, uow, clock);
   const listAppointments = new ListAppointmentsUseCase(appointments, barbers);
   const getAppointment = new GetAppointmentUseCase(appointments, barbers);
-  const updateAppointment = new UpdateAppointmentUseCase(appointments, barbers, services, clock);
+  const updateAppointment = new UpdateAppointmentUseCase(
+    appointments,
+    barbers,
+    services,
+    barberServices,
+    clock,
+  );
   const softDeleteAppointmentAdmin = new SoftDeleteAppointmentAdminUseCase(appointments);
   const restoreAppointmentAdmin = new RestoreAppointmentAdminUseCase(appointments);
-  const createService = new CreateServiceUseCase(barbers, services, clock);
   const setAvailability = new SetBarberAvailabilityUseCase(barbers);
   const registerDeviceToken = new RegisterDeviceTokenUseCase(notificationTokens);
   const listBookableBarbers = new ListBookableBarbersUseCase(barbers, users);
-  const listServicesByBarber = new ListServicesByBarberUseCase(services);
-  const listMyServices = new ListMyServicesUseCase(barbers, services);
-  const getServiceByBarber = new GetServiceByBarberUseCase(barbers, services);
-  const updateService = new UpdateServiceUseCase(barbers, services, clock);
-  const softDeleteService = new SoftDeleteServiceUseCase(barbers, services);
-  const restoreService = new RestoreServiceUseCase(barbers, services);
+  const listServicesByBarber = new ListServicesByBarberUseCase(barbers, barberServices);
+  const listMyAssignedServices = new ListMyAssignedServicesUseCase(barbers, barberServices);
   const listMyAvailability = new ListMyAvailabilityUseCase(barbers);
   const createAvailabilitySlot = new CreateAvailabilitySlotUseCase(barbers);
   const getAvailabilitySlot = new GetAvailabilitySlotUseCase(barbers);
@@ -161,11 +171,35 @@ export async function createServer(): Promise<FastifyInstance> {
   const softDeleteUserAdmin = new SoftDeleteUserAdminUseCase(users, barbers);
   const restoreUserAdmin = new RestoreUserAdminUseCase(users, barbers);
   const listBarbersAdmin = new ListBarbersAdminUseCase(barbers, users);
-  const listServicesByBarberAdmin = new ListServicesByBarberAdminUseCase(barbers, services);
-  const createServiceAdmin = new CreateServiceAdminUseCase(barbers, services, clock);
-  const updateServiceAdmin = new UpdateServiceAdminUseCase(barbers, services, clock);
-  const softDeleteServiceAdmin = new SoftDeleteServiceAdminUseCase(barbers, services);
-  const restoreServiceAdmin = new RestoreServiceAdminUseCase(barbers, services);
+  const createServiceCatalog = new CreateServiceCatalogUseCase(services, clock);
+  const listServicesCatalog = new ListServicesCatalogUseCase(services);
+  const getServiceCatalog = new GetServiceCatalogUseCase(services);
+  const updateServiceCatalog = new UpdateServiceCatalogUseCase(services, clock);
+  const softDeleteServiceCatalog = new SoftDeleteServiceCatalogUseCase(services);
+  const restoreServiceCatalog = new RestoreServiceCatalogUseCase(services);
+  const assignBarberToService = new AssignBarberToServiceUseCase(
+    barbers,
+    services,
+    barberServices,
+    clock,
+  );
+  const unassignBarberFromService = new UnassignBarberFromServiceUseCase(
+    barberServices,
+    barbers,
+    services,
+  );
+  const restoreBarberServiceAssignment = new RestoreBarberServiceAssignmentUseCase(
+    barberServices,
+    barbers,
+    services,
+  );
+  const listBarbersForService = new ListBarbersForServiceUseCase(
+    barberServices,
+    barbers,
+    users,
+    services,
+  );
+  const listServicesForBarber = new ListServicesForBarberUseCase(barbers, barberServices);
   const getBarberAdmin = new GetBarberAdminUseCase(barbers, users);
   const updateBarberAdmin = new UpdateBarberAdminUseCase(barbers, users, clock);
   const softDeleteBarberAdmin = new SoftDeleteBarberAdminUseCase(barbers, users);
@@ -241,11 +275,6 @@ export async function createServer(): Promise<FastifyInstance> {
       softDeleteUserAdmin,
       restoreUserAdmin,
       listBarbersAdmin,
-      listServicesByBarberAdmin,
-      createServiceAdmin,
-      updateServiceAdmin,
-      softDeleteServiceAdmin,
-      restoreServiceAdmin,
       getBarberAdmin,
       updateBarberAdmin,
       softDeleteBarberAdmin,
@@ -254,17 +283,30 @@ export async function createServer(): Promise<FastifyInstance> {
     authenticate,
     requireAdmin,
   );
+  registerServicesAdminRoutes(
+    app,
+    {
+      createServiceCatalog,
+      listServicesCatalog,
+      getServiceCatalog,
+      updateServiceCatalog,
+      softDeleteServiceCatalog,
+      restoreServiceCatalog,
+      assignBarberToService,
+      unassignBarberFromService,
+      restoreBarberServiceAssignment,
+      listBarbersForService,
+      listServicesForBarber,
+    },
+    authenticate,
+    requireAdmin,
+  );
   registerBarberRoutes(
     app,
     {
-      createService,
       setAvailability,
       registerDeviceToken,
-      listMyServices,
-      getServiceByBarber,
-      updateService,
-      softDeleteService,
-      restoreService,
+      listMyAssignedServices,
       listMyAvailability,
       createAvailabilitySlot,
       getAvailabilitySlot,

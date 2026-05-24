@@ -1,10 +1,20 @@
+import { DomainError } from "../../../domain/errors/domain-error.js";
+import type { BarberRepositoryPort } from "../../ports/barber-repository.port.js";
+import type { BarberServiceRepositoryPort } from "../../ports/barber-service-repository.port.js";
 import type { Service } from "../../../domain/entities/service.js";
-import type { ServiceRepositoryPort } from "../../ports/service-repository.port.js";
 
+/** Serviços do catálogo associados a um barbeiro (público / marcação). */
 export class ListServicesByBarberUseCase {
-  constructor(private readonly services: ServiceRepositoryPort) {}
+  constructor(
+    private readonly barbers: BarberRepositoryPort,
+    private readonly barberServices: BarberServiceRepositoryPort,
+  ) {}
 
-  execute(barberId: string): Promise<Service[]> {
-    return this.services.listByBarber(barberId);
+  async execute(barberId: string): Promise<Service[]> {
+    const barber = await this.barbers.findById(barberId);
+    if (!barber) {
+      throw new DomainError("Barbeiro não encontrado", "NOT_FOUND", 404);
+    }
+    return this.barberServices.listServicesByBarber(barberId);
   }
 }

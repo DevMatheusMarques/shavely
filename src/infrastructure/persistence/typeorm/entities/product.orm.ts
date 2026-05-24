@@ -39,12 +39,12 @@ export class ProductOrm {
   @Column({ name: "cost_cents", type: "int", default: 0 })
   costCents!: number;
 
-  @CreateDateColumn({ name: "created_at", type: "datetime", precision: 3 })
+  @CreateDateColumn({ name: "created_at", type: "timestamp", precision: 3 })
   createdAt!: Date;
 
-  @UpdateDateColumn({ name: "updated_at", type: "datetime", precision: 3 })
+  @UpdateDateColumn({ name: "updated_at", type: "timestamp", precision: 3 })
   updatedAt!: Date;
 
-  @DeleteDateColumn({ name: "deleted_at", type: "datetime", precision: 3 })
+  @DeleteDateColumn({ name: "deleted_at", type: "timestamp", precision: 3 })
   deletedAt!: Date | null;
 }

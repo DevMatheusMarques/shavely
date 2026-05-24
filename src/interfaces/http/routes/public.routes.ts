@@ -65,7 +65,6 @@ export function registerPublicRoutes(
       void reply.send(
         services.map((s) => ({
           id: s.id,
-          barberId: s.barberId,
           name: s.name,
           durationMinutes: s.durationMinutes,
           priceCents: s.priceCents,

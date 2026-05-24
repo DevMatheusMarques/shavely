@@ -16,24 +16,24 @@ export class AppointmentOrm {
   @Column({ name: "service_id", type: "char", length: 36 })
   serviceId!: string;
 
-  @Column({ name: "starts_at", type: "datetime", precision: 3 })
+  @Column({ name: "starts_at", type: "timestamp", precision: 3 })
   startsAt!: Date;
 
-  @Column({ name: "ends_at", type: "datetime", precision: 3 })
+  @Column({ name: "ends_at", type: "timestamp", precision: 3 })
   endsAt!: Date;
 
   @Column({ type: "varchar", length: 32 })
   status!: string;
 
-  @Column({ name: "reminder_sent_at", type: "datetime", precision: 3, nullable: true })
+  @Column({ name: "reminder_sent_at", type: "timestamp", precision: 3, nullable: true })
   reminderSentAt!: Date | null;
 
-  @CreateDateColumn({ name: "created_at", type: "datetime", precision: 3 })
+  @CreateDateColumn({ name: "created_at", type: "timestamp", precision: 3 })
   createdAt!: Date;
 
-  @UpdateDateColumn({ name: "updated_at", type: "datetime", precision: 3 })
+  @UpdateDateColumn({ name: "updated_at", type: "timestamp", precision: 3 })
   updatedAt!: Date;
 
-  @DeleteDateColumn({ name: "deleted_at", type: "datetime", precision: 3 })
+  @DeleteDateColumn({ name: "deleted_at", type: "timestamp", precision: 3 })
   deletedAt!: Date | null;
 }

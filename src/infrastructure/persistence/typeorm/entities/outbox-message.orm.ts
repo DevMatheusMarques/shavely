@@ -15,9 +15,9 @@ export class OutboxMessageOrm {
   @Column({ type: "text" })
   payload!: string;
 
-  @CreateDateColumn({ name: "created_at", type: "datetime", precision: 3 })
+  @CreateDateColumn({ name: "created_at", type: "timestamp", precision: 3 })
   createdAt!: Date;
 
-  @Column({ name: "published_at", type: "datetime", precision: 3, nullable: true })
+  @Column({ name: "published_at", type: "timestamp", precision: 3, nullable: true })
   publishedAt!: Date | null;
 }

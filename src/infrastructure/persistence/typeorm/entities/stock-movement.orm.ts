@@ -24,6 +24,6 @@ export class StockMovementOrm {
   @Column({ name: "performed_by_user_id", type: "char", length: 36, nullable: true })
   performedByUserId!: string | null;
 
-  @CreateDateColumn({ name: "created_at", type: "datetime", precision: 3 })
+  @CreateDateColumn({ name: "created_at", type: "timestamp", precision: 3 })
   createdAt!: Date;
 }

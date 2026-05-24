@@ -1,17 +1,16 @@
 services:
-  mysql:
-    image: mysql:8.4
+  postgres:
+    image: postgres:18-alpine
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: shavely
-      MYSQL_USER: shavely
-      MYSQL_PASSWORD: shavely
+      POSTGRES_DB: shavely
+      POSTGRES_USER: shavely
+      POSTGRES_PASSWORD: shavely
     ports:
-      - "3307:3306"
+      - "5432:5432"
     volumes:
-      - mysql_data:/var/lib/mysql
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      test: ["CMD-SHELL", "pg_isready -U shavely -d shavely"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -37,7 +36,7 @@ services:
       dockerfile: Dockerfile
     env_file: .env.docker
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
     command: ["npm", "run", "migration:run:dist"]
     restart: "no"
@@ -52,7 +51,7 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
-      mysql:
+      postgres:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
@@ -66,7 +65,7 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
-      mysql:
+      postgres:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
@@ -80,7 +79,7 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
-      mysql:
+      postgres:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
@@ -94,7 +93,7 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
-      mysql:
+      postgres:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
@@ -108,7 +107,7 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
-      mysql:
+      postgres:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
@@ -145,5 +144,5 @@ services:
       retries: 10
 
 volumes:
-  mysql_data:
+  postgres_data:
   mongo_novu:

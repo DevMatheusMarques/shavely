@@ -182,6 +182,27 @@ export const createServiceResponseSchema = {
   },
 };
 
+export const serviceCatalogRowSchema = {
+  type: "object" as const,
+  properties: {
+    id: { type: "string", format: "uuid" },
+    name: { type: "string" },
+    durationMinutes: { type: "integer" },
+    priceCents: { type: "integer" },
+    createdAt: { type: "string", format: "date-time" },
+    updatedAt: { type: "string", format: "date-time" },
+    deletedAt: { type: "string", format: "date-time", nullable: true },
+  },
+};
+
+export const assignBarberToServiceBodySchema = {
+  type: "object" as const,
+  required: ["barberId"],
+  properties: {
+    barberId: { type: "string", format: "uuid", description: "Barbeiro a associar ao serviço" },
+  },
+};
+
 export const availabilitySlotSchema = {
   type: "object" as const,
   required: ["weekday", "startMinutes", "endMinutes"],
@@ -290,7 +311,6 @@ export const publicServiceRowSchema = {
   type: "object" as const,
   properties: {
     id: { type: "string", format: "uuid" },
-    barberId: { type: "string", format: "uuid" },
     name: { type: "string" },
     durationMinutes: { type: "integer" },
     priceCents: { type: "integer" },

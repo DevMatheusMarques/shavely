@@ -1,6 +1,5 @@
 export interface ServiceProps {
   id: string;
-  barberId: string;
   name: string;
   durationMinutes: number;
   priceCents: number;
@@ -14,9 +13,6 @@ export class Service {
   get id(): string {
     return this.props.id;
   }
-  get barberId(): string {
-    return this.props.barberId;
-  }
   get name(): string {
     return this.props.name;
   }
@@ -25,6 +21,12 @@ export class Service {
   }
   get priceCents(): number {
     return this.props.priceCents;
+  }
+  get createdAt(): Date {
+    return this.props.createdAt;
+  }
+  get updatedAt(): Date {
+    return this.props.updatedAt;
   }
 
   toProps(): ServiceProps {

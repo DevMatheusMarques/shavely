@@ -16,6 +16,12 @@ export const updateServiceSchema = z.object({
 
 export type UpdateServiceInput = z.infer<typeof updateServiceSchema>;
 
+export const assignBarberToServiceSchema = z.object({
+  barberId: z.string().uuid(),
+});
+
+export type AssignBarberToServiceInput = z.infer<typeof assignBarberToServiceSchema>;
+
 export const availabilitySlotSchema = z.object({
   weekday: z.number().int().min(0).max(6),
   startMinutes: z.number().int().min(0).max(24 * 60 - 1),

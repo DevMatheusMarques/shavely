@@ -9,15 +9,15 @@ export class BarberAvailabilityOrm {
   @Column({ name: "barber_id", type: "char", length: 36 })
   barberId!: string;
 
-  @Column({ type: "tinyint", unsigned: true })
+  @Column({ type: "smallint" })
   weekday!: number;
 
-  @Column({ name: "start_minutes", type: "smallint", unsigned: true })
+  @Column({ name: "start_minutes", type: "smallint" })
   startMinutes!: number;
 
-  @Column({ name: "end_minutes", type: "smallint", unsigned: true })
+  @Column({ name: "end_minutes", type: "smallint" })
   endMinutes!: number;
 
-  @DeleteDateColumn({ name: "deleted_at", type: "datetime", precision: 3 })
+  @DeleteDateColumn({ name: "deleted_at", type: "timestamp", precision: 3 })
   deletedAt!: Date | null;
 }

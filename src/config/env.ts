@@ -5,11 +5,13 @@ loadDotenv();
 export interface AppEnv {
   NODE_ENV: string;
   PORT: number;
-  MYSQL_HOST: string;
-  MYSQL_PORT: number;
-  MYSQL_USER: string;
-  MYSQL_PASSWORD: string;
-  MYSQL_DATABASE: string;
+  DATABASE_URL: string;
+  POSTGRES_HOST: string;
+  POSTGRES_PORT: number;
+  POSTGRES_USER: string;
+  POSTGRES_PASSWORD: string;
+  POSTGRES_DATABASE: string;
+  POSTGRES_SSL: boolean;
   RABBITMQ_URL: string;
   JWT_SECRET: string;
   JWT_EXPIRES_IN: string;
@@ -35,15 +37,43 @@ function required(name: string, fallback?: string): string {
   return v;
 }
 
+function parseDatabaseUrl(url: string): Pick<
+  AppEnv,
+  "POSTGRES_HOST" | "POSTGRES_PORT" | "POSTGRES_USER" | "POSTGRES_PASSWORD" | "POSTGRES_DATABASE"
+> {
+  const parsed = new URL(url.replace(/^postgresql:/, "postgres:"));
+  const database = parsed.pathname.replace(/^\//, "");
+  if (!database) {
+    throw new Error("DATABASE_URL must include a database name");
+  }
+
+  return {
+    POSTGRES_HOST: parsed.hostname,
+    POSTGRES_PORT: Number(parsed.port || "5432"),
+    POSTGRES_USER: decodeURIComponent(parsed.username),
+    POSTGRES_PASSWORD: decodeURIComponent(parsed.password),
+    POSTGRES_DATABASE: database,
+  };
+}
+
 export function loadEnv(): AppEnv {
+  const databaseUrl = process.env.DATABASE_URL ?? "";
+  const postgresFromUrl = databaseUrl ? parseDatabaseUrl(databaseUrl) : null;
+  const postgresSsl =
+    process.env.POSTGRES_SSL === "true" ||
+    process.env.POSTGRES_SSL === "1" ||
+    databaseUrl.includes("render.com");
+
   return {
     NODE_ENV: required("NODE_ENV", "development"),
     PORT: Number(required("PORT", "3000")),
-    MYSQL_HOST: required("MYSQL_HOST", "localhost"),
-    MYSQL_PORT: Number(required("MYSQL_PORT", "3306")),
-    MYSQL_USER: required("MYSQL_USER", "shavely"),
-    MYSQL_PASSWORD: required("MYSQL_PASSWORD", "shavely"),
-    MYSQL_DATABASE: required("MYSQL_DATABASE", "shavely"),
+    DATABASE_URL: databaseUrl,
+    POSTGRES_SSL: postgresSsl,
+    POSTGRES_HOST: postgresFromUrl?.POSTGRES_HOST ?? required("POSTGRES_HOST", "localhost"),
+    POSTGRES_PORT: postgresFromUrl?.POSTGRES_PORT ?? Number(required("POSTGRES_PORT", "5432")),
+    POSTGRES_USER: postgresFromUrl?.POSTGRES_USER ?? required("POSTGRES_USER", "shavely"),
+    POSTGRES_PASSWORD: postgresFromUrl?.POSTGRES_PASSWORD ?? required("POSTGRES_PASSWORD", "shavely"),
+    POSTGRES_DATABASE: postgresFromUrl?.POSTGRES_DATABASE ?? required("POSTGRES_DATABASE", "shavely"),
     RABBITMQ_URL: required("RABBITMQ_URL", "amqp://guest:guest@localhost:5672"),
     JWT_SECRET: required("JWT_SECRET", "dev-secret"),
     JWT_EXPIRES_IN: required("JWT_EXPIRES_IN", "7d"),

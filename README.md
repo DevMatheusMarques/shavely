@@ -1,6 +1,6 @@
 # Shavely API
 
-API REST para **agendamento em barbearia**, construída em **Node.js + TypeScript** com **Fastify**, **MySQL (TypeORM)** e arquitetura orientada a eventos com **RabbitMQ**. Inclui autenticação JWT com papéis **ADMIN**, **BARBER** e **CLIENT**, regras de negócio de marcação (disponibilidade, anti-sobreposição, cancelamento com antecedência mínima), **Outbox** para consistência entre base de dados e mensagens, workers para notificações push (Firebase), analytics (Novu) e lembretes, além de integração com links **WhatsApp** (`wa.me`).
+API REST para **agendamento em barbearia**, construída em **Node.js + TypeScript** com **Fastify**, **PostgreSQL (TypeORM)** e arquitetura orientada a eventos com **RabbitMQ**. Inclui autenticação JWT com papéis **ADMIN**, **BARBER** e **CLIENT**, regras de negócio de marcação (disponibilidade, anti-sobreposição, cancelamento com antecedência mínima), **Outbox** para consistência entre base de dados e mensagens, workers para notificações push (Firebase), analytics (Novu) e lembretes, além de integração com links **WhatsApp** (`wa.me`).
 
 ---
 
@@ -11,7 +11,7 @@ API REST para **agendamento em barbearia**, construída em **Node.js + TypeScrip
 | Runtime | Node.js 20+ |
 | Linguagem | TypeScript |
 | Framework HTTP | Fastify |
-| Base de dados | MySQL 8 |
+| Base de dados | PostgreSQL 18 |
 | ORM | TypeORM (migrações incluídas) |
 | Validação | Zod |
 | Mensagens | RabbitMQ (exchange tópico, filas, DLQ) |
@@ -39,7 +39,7 @@ O projeto segue **Clean Architecture** e **DDD** em camadas:
 ### Requisitos
 
 - Node.js 20+
-- MySQL 8 e RabbitMQ (ou apenas Docker / Docker Compose)
+- PostgreSQL 18 e RabbitMQ (ou apenas Docker / Docker Compose)
 
 ### Variáveis de ambiente
 
@@ -48,7 +48,8 @@ Copie `.env.example` para `.env` e ajuste:
 | Variável | Descrição |
 |----------|-----------|
 | `PORT` | Porta HTTP (ex.: 3000) |
-| `MYSQL_*` | Host, porta, utilizador, palavra-passe e nome da base |
+| `DATABASE_URL` | URL completa do Postgres (Render). Tem prioridade sobre `POSTGRES_*` |
+| `POSTGRES_*` | Host, porta, utilizador, palavra-passe e nome da base (Docker/local) |
 | `RABBITMQ_URL` | URL AMQP (ex.: `amqp://guest:guest@localhost:5672`) |
 | `JWT_SECRET` | Segredo para assinar JWT (obrigatório em produção) |
 | `JWT_EXPIRES_IN` | Expiração do token (ex.: `7d`) |
@@ -62,7 +63,7 @@ Copie `.env.example` para `.env` e ajuste:
 ```bash
 npm install
 cp .env.example .env
-# Garanta MySQL e RabbitMQ a correr e base criada
+# Garanta PostgreSQL e RabbitMQ a correr e base criada
 npm run migration:run
 npm run start:dev
 ```
@@ -79,7 +80,7 @@ docker compose up -d
 ```
 
 - **API:** `http://localhost:3000`
-- **MySQL (host):** porta mapeada **3307** → 3306 no contentor (ver `docker-compose.yml`)
+- **PostgreSQL (host):** porta **5432**
 - **RabbitMQ Management:** `http://localhost:15672` (guest / guest)
 - O serviço **`migrate`** executa as migrações TypeORM antes dos restantes contentores
 

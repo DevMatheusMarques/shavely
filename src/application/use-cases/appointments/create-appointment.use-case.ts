@@ -7,6 +7,7 @@ import { assertWithinAvailability } from "../../services/scheduling-policy.js";
 import type { AppointmentRepositoryPort } from "../../ports/appointment-repository.port.js";
 import type { BarberRepositoryPort } from "../../ports/barber-repository.port.js";
 import type { ClockPort } from "../../ports/clock.port.js";
+import type { BarberServiceRepositoryPort } from "../../ports/barber-service-repository.port.js";
 import type { ServiceRepositoryPort } from "../../ports/service-repository.port.js";
 import type { UnitOfWorkPort } from "../../ports/unit-of-work.port.js";
 import type { Requester } from "../../types/requester.js";
@@ -19,6 +20,7 @@ export class CreateAppointmentUseCase {
     private readonly appointments: AppointmentRepositoryPort,
     private readonly barbers: BarberRepositoryPort,
     private readonly services: ServiceRepositoryPort,
+    private readonly barberServices: BarberServiceRepositoryPort,
     private readonly users: UserRepositoryPort,
     private readonly uow: UnitOfWorkPort,
     private readonly clock: ClockPort,
@@ -39,9 +41,13 @@ export class CreateAppointmentUseCase {
     if (!barber) {
       throw new DomainError("Barbeiro não encontrado", "BARBER_NOT_FOUND", 404);
     }
-    const service = await this.services.findByIdAndBarber(input.serviceId, input.barberId);
+    const service = await this.services.findById(input.serviceId);
     if (!service) {
-      throw new DomainError("Serviço não encontrado para este barbeiro", "SERVICE_NOT_FOUND", 404);
+      throw new DomainError("Serviço não encontrado", "SERVICE_NOT_FOUND", 404);
+    }
+    const assigned = await this.barberServices.isAssigned(input.barberId, input.serviceId);
+    if (!assigned) {
+      throw new DomainError("Este barbeiro não presta o serviço seleccionado", "SERVICE_NOT_OFFERED", 404);
     }
     const availability = await this.barbers.listAvailability(input.barberId);
     if (availability.length === 0) {

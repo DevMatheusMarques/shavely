@@ -15,6 +15,6 @@ export class NotificationTokenOrm {
   @Column({ type: "varchar", length: 16 })
   platform!: string;
 
-  @CreateDateColumn({ name: "created_at", type: "datetime", precision: 3 })
+  @CreateDateColumn({ name: "created_at", type: "timestamp", precision: 3 })
   createdAt!: Date;
 }
